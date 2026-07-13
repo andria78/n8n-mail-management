@@ -29,7 +29,7 @@
         "promptType": "define",
         "text": "={{ $json.message.text }}",
         "options": {
-          "systemMessage": "You are a helpful Telegram assistant with access to OVH Outlook emails.\n\nYou have these tools available:\n1. Read OVH Emails — Fetch the last 50 emails from your inbox (no input needed)\n2. Send OVH Email — Send an email (you provide recipient, subject, body, the from address is eric@andrianarison.com)\n3. Delete OVH Email — Move an email to Trash (you provide the UID)\n\nWhen the user asks:\n- \"Check my inbox\" → use Read OVH Emails\n- \"Send an email to X about Y\" → ask for confirmation, then use Send OVH Email\n- \"Delete email number N\" → ask for the UID, then use Delete OVH Email\n\nCRITICAL: Always ask the user for confirmation before sending or deleting emails.\nBe concise and friendly. Respond in the same language the user writes in.\n\nIMPORTANT: Do NOT use any markdown, HTML, or special formatting in your responses. Write in plain text only. No bold, no italics, no code blocks, no links.",
+          "systemMessage": "You are a helpful Telegram assistant with access to OVH Outlook emails.\n\nYou have these tools available:\n1. Read OVH Emails - Read and filter emails, or mark them as read/unread/flagged. Use filters like seen (true=read, false=unread), from, subject.\n2. Send OVH Email - Send an email (you provide recipient, subject, body, the from address is eric@andrianarison.com)\n3. Delete OVH Email - Move an email to Trash (you provide the UID)\n\nWhen the user asks about emails:\n- \"Check my inbox\" → use Read OVH Emails\n- \"Show unread emails\" → use Read OVH Emails with seen=false\n- \"Show emails from someone\" → use Read OVH Emails with from=\"address\"\n- \"Mark email as read\" → use Read OVH Emails with action=\"mark\", emailUid=..., markAsRead=true\n- \"Send an email to X about Y\" → ask for confirmation, then use Send OVH Email\n- \"Delete email number N\" → ask for the UID, then use Delete OVH Email\n\nCRITICAL: Always ask the user for confirmation before sending or deleting emails.\nBe concise and friendly. Respond in the same language the user writes in.\n\nIMPORTANT: Do NOT use any markdown, HTML, or special formatting in your responses. Write in plain text only. No bold, no italics, no code blocks, no links.",
           "enableStreaming": false
         }
       },
@@ -70,13 +70,45 @@
     },
     {
       "parameters": {
-        "description": "Fetch the last 50 emails from your OVH mailbox",
+        "description": "Read emails from your OVH mailbox with optional filters. You can filter by seen (true=read only, false=unread only), from, subject, searchText, flagged, answered, since/before dates, mailbox, and limit. To mark emails as read/unread/flagged/deleted set action=mark with emailUid and markAsRead/markFlagged/markDeleted.",
         "workflowId": { "__rl": true, "mode": "id", "value": "me7ect2HVlIIo4us" },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "action": "",
+            "seen": "",
+            "from": "",
+            "subject": "",
+            "searchText": "",
+            "flagged": "",
+            "answered": "",
+            "since": "",
+            "before": "",
+            "mailbox": "",
+            "limit": "",
+            "emailUid": "",
+            "markAsRead": "",
+            "markFlagged": "",
+            "markDeleted": ""
+          },
           "matchingColumns": [],
-          "schema": [],
+          "schema": [
+            { "id": "action", "displayName": "Action: \"read\" or \"mark\"", "required": false, "type": "string", "display": true },
+            { "id": "seen", "displayName": "Filter: seen (true=read only, false=unread only)", "required": false, "type": "string", "display": true },
+            { "id": "from", "displayName": "Filter: sender email address", "required": false, "type": "string", "display": true },
+            { "id": "subject", "displayName": "Filter: email subject", "required": false, "type": "string", "display": true },
+            { "id": "searchText", "displayName": "Filter: text in email body", "required": false, "type": "string", "display": true },
+            { "id": "flagged", "displayName": "Filter: flagged/important (true/false)", "required": false, "type": "string", "display": true },
+            { "id": "answered", "displayName": "Filter: answered/replied (true/false)", "required": false, "type": "string", "display": true },
+            { "id": "since", "displayName": "Filter: emails after date (YYYY-MM-DD)", "required": false, "type": "string", "display": true },
+            { "id": "before", "displayName": "Filter: emails before date (YYYY-MM-DD)", "required": false, "type": "string", "display": true },
+            { "id": "mailbox", "displayName": "Filter: mailbox folder (default: INBOX)", "required": false, "type": "string", "display": true },
+            { "id": "limit", "displayName": "Max results (default: 50)", "required": false, "type": "number", "display": true },
+            { "id": "emailUid", "displayName": "For mark action: email UID(s) comma-separated", "required": false, "type": "string", "display": true },
+            { "id": "markAsRead", "displayName": "For mark action: mark as read (true/false)", "required": false, "type": "string", "display": true },
+            { "id": "markFlagged", "displayName": "For mark action: mark as flagged/important (true/false)", "required": false, "type": "string", "display": true },
+            { "id": "markDeleted", "displayName": "For mark action: mark as deleted (true/false)", "required": false, "type": "string", "display": true }
+          ],
           "attemptToConvertTypes": false,
           "convertFieldsToString": false
         }
