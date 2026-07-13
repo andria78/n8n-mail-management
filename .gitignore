@@ -1,0 +1,13 @@
+# n8n data
+n8n_data/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/settings.json
+*.code-workspace
+
+# Logs
+*.log
