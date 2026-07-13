@@ -1,0 +1,65 @@
+{
+  "name": "OVH Email Operations",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "id": "trigger-exec-workflow",
+      "name": "Start",
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.2,
+      "position": [240, 304]
+    },
+    {
+      "parameters": {
+        "authentication": "coreImapAccount",
+        "resource": "email",
+        "mailboxes": ["INBOX"],
+        "emailDateRange": { "since": "" },
+        "emailFlags": { "recent": true },
+        "customLabels": {},
+        "emailSearchFilters": {},
+        "includeParts": ["textContent", "flags", "size"],
+        "limit": 50
+      },
+      "id": "68c803c6-c82c-4d27-bda9-38f09ced2b16",
+      "name": "Read Emails",
+      "type": "n8n-nodes-imap-enhanced.imapEnhanced",
+      "typeVersion": 1,
+      "position": [640, 304],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ ({\"subject\": $json.subject, \"from\": $json.from, \"date\": $json.date, \"uid\": $json.uid, \"flags\": $json.flags, \"size\": $json.size, \"body\": $json.textContent}) }}",
+        "options": {}
+      },
+      "id": "3ed51d73-4d79-49a7-aa57-267febd5d4b4",
+      "name": "Format Read Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [960, 304],
+      "alwaysOutputData": true
+    }
+  ],
+  "connections": {
+    "Start": {
+      "main": [[{ "node": "Read Emails", "type": "main", "index": 0 }]]
+    },
+    "Read Emails": {
+      "main": [[{ "node": "Format Read Output", "type": "main", "index": 0 }]]
+    }
+  },
+  "nodeGroups": [],
+  "tags": [],
+  "active": true,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate",
+    "availableInMCP": true,
+    "timeSavedMode": "fixed",
+    "callerPolicy": "workflowsFromSameOwner"
+  }
+}

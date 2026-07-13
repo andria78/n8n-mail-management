@@ -6,131 +6,88 @@
         "updates": ["message"],
         "additionalFields": {}
       },
-      "id": "a1b2c3d4-1111-4000-8000-000000000001",
+      "id": "2c0cc6ed-c04f-487c-96e6-7ce8cbb1cde9",
       "name": "Telegram Message Received",
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.3,
-      "position": [208, 160],
+      "position": [2000, -208],
       "webhookId": "wh-telegram-001"
     },
     {
       "parameters": {
-        "model": "gemma4:e4b",
+        "model": "qwen2.5:7b",
         "options": { "temperature": 0.7 }
       },
-      "id": "a1b2c3d4-1111-4000-8000-000000000002",
-      "name": "Ollama Gemma4",
+      "id": "a9bcb863-2b53-412f-be27-bd0092a48e2f",
+      "name": "Ollama",
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
-      "position": [304, 416]
+      "position": [2096, 48]
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.message.text }}",
+        "options": {
+          "systemMessage": "You are a helpful Telegram assistant with access to OVH Outlook emails.\n\nYou have these tools available:\n1. Read OVH Emails — Fetch the last 50 emails from your inbox (no input needed)\n2. Send OVH Email — Send an email (you provide recipient, subject, body, the from address is eric@andrianarison.com)\n3. Delete OVH Email — Move an email to Trash (you provide the UID)\n\nWhen the user asks:\n- \"Check my inbox\" → use Read OVH Emails\n- \"Send an email to X about Y\" → ask for confirmation, then use Send OVH Email\n- \"Delete email number N\" → ask for the UID, then use Delete OVH Email\n\nCRITICAL: Always ask the user for confirmation before sending or deleting emails.\nBe concise and friendly. Respond in the same language the user writes in.\n\nIMPORTANT: Do NOT use any markdown, HTML, or special formatting in your responses. Write in plain text only. No bold, no italics, no code blocks, no links.",
+          "enableStreaming": false
+        }
+      },
+      "id": "c42909c3-ac7e-4061-8fa8-1d5a78900b12",
+      "name": "AI Assistant with Email",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 3.1,
+      "position": [2240, -208]
     },
     {
       "parameters": {
         "sessionIdType": "customKey",
-        "sessionKey": "={{ $json.message.chat.id }}"
+        "sessionKey": "={{ $('Telegram Message Received').item.json.message.chat.id }}",
+        "contextWindowLength": 10
       },
-      "id": "a1b2c3d4-1111-4000-8000-000000000003",
-      "name": "Chat Memory",
+      "id": "d4e5f6a7-b8c9-4d0e-a1b2-c3d4e5f6a7b8",
+      "name": "Simple Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.4,
-      "position": [496, 416]
+      "position": [2288, 48]
     },
     {
       "parameters": {
-        "options": {
-          "systemMessage": "You are a helpful Telegram assistant with access to OVH Outlook emails.\n\nYou have these tools available:\n1. Read OVH Emails — Fetch the last 10 emails from your inbox\n2. Send OVH Email — Send an email (you provide recipient, subject, body)\n3. Delete OVH Email — Move an email to Trash (you provide the UID)\n\nWhen the user asks:\n- \"Check my inbox\" → use Read OVH Emails\n- \"Send an email to X about Y\" → ask for confirmation, then use Send OVH Email\n- \"Delete email number N\" → use Delete OVH Email\n\nCRITICAL: Always ask the user for confirmation before sending or deleting emails.\nBe concise and friendly. Respond in the same language the user writes in.",
-          "enableStreaming": false
-        }
-      },
-      "id": "a1b2c3d4-1111-4000-8000-000000000004",
-      "name": "AI Assistant with Email",
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 3.1,
-      "position": [448, 160]
-    },
-    {
-      "parameters": {
-        "host": "imap.mail.ovh.net",
-        "port": 993,
-        "ssl": true,
-        "user": "={{ $credentials['IMAP account'].user }}",
-        "password": "={{ $credentials['IMAP account'].password }}",
-        "mailbox": "INBOX",
-        "format": "text",
-        "simple": false,
-        "onlyUnread": false,
-        "maxMessages": 10
-      },
-      "id": "a1b2c3d4-1111-4000-8000-000000000005",
-      "name": "Read OVH Emails",
-      "type": "n8n-nodes-base.imapEmail",
-      "typeVersion": 1.2,
-      "position": [848, 400],
-      "credentials": {
-        "imap": "IMAP account"
-      }
-    },
-    {
-      "parameters": {
-        "fromEmail": "={{ $credentials['IMAP account'].user }}",
-        "toEmail": "",
-        "subject": "",
-        "text": "",
-        "options": {
-          "host": "ssl0.ovh.net",
-          "port": 465,
-          "ssl": true,
-          "user": "={{ $credentials['IMAP account'].user }}",
-          "password": "={{ $credentials['IMAP account'].password }}"
-        }
-      },
-      "id": "a1b2c3d4-1111-4000-8000-000000000006",
-      "name": "Send OVH Email",
-      "type": "n8n-nodes-base.email",
-      "typeVersion": 2.1,
-      "position": [992, 400],
-      "credentials": {
-        "smtp": "IMAP account"
-      }
-    },
-    {
-      "parameters": {
-        "host": "imap.mail.ovh.net",
-        "port": 993,
-        "ssl": true,
-        "user": "={{ $credentials['IMAP account'].user }}",
-        "password": "={{ $credentials['IMAP account'].password }}",
-        "action": "move",
-        "mailbox": "INBOX",
-        "targetMailbox": "Trash"
-      },
-      "id": "a1b2c3d4-1111-4000-8000-000000000007",
-      "name": "Delete OVH Email",
-      "type": "n8n-nodes-base.imapEmail",
-      "typeVersion": 1.2,
-      "position": [688, 400],
-      "credentials": {
-        "imap": "IMAP account"
-      }
-    },
-    {
-      "parameters": {
-        "chatId": "={{ $json.chatId }}",
+        "chatId": "={{ $('Telegram Message Received').item.json.message.chat.id }}",
         "text": "={{ $json.output }}",
         "additionalFields": {
           "appendAttribution": false,
-          "disable_web_page_preview": true
+          "disable_web_page_preview": true,
+          "parse_mode": ""
         }
       },
-      "id": "a1b2c3d4-1111-4000-8000-000000000008",
+      "id": "b12ffc41-c2a8-4a6d-b11b-c8ef9c6dfd4b",
       "name": "Send Reply to Telegram",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [1008, 160],
+      "position": [2800, -208],
       "webhookId": "wh-telegram-reply-001"
+    },
+    {
+      "parameters": {
+        "description": "Fetch the last 50 emails from your OVH mailbox",
+        "workflowId": { "__rl": true, "mode": "id", "value": "me7ect2HVlIIo4us" },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "id": "b7fa2fe2-ce27-47f6-956c-667adf1dd6cf",
+      "name": "Read OVH Emails",
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2.2,
+      "position": [2480, 48]
     }
   ],
-  "pinData": {},
   "connections": {
     "Telegram Message Received": {
       "main": [[{ "node": "AI Assistant with Email", "type": "main", "index": 0 }]]
@@ -138,28 +95,22 @@
     "AI Assistant with Email": {
       "main": [[{ "node": "Send Reply to Telegram", "type": "main", "index": 0 }]]
     },
-    "Ollama Gemma4": {
-      "ai_languageModel": [[{ "node": "AI Assistant with Email", "type": "ai_languageModel", "index": 0 }]]
-    },
-    "Chat Memory": {
+    "Simple Memory": {
       "ai_memory": [[{ "node": "AI Assistant with Email", "type": "ai_memory", "index": 0 }]]
+    },
+    "Ollama": {
+      "ai_languageModel": [[{ "node": "AI Assistant with Email", "type": "ai_languageModel", "index": 0 }]]
     },
     "Read OVH Emails": {
       "ai_tool": [[{ "node": "AI Assistant with Email", "type": "ai_tool", "index": 0 }]]
-    },
-    "Send OVH Email": {
-      "ai_tool": [[{ "node": "AI Assistant with Email", "type": "ai_tool", "index": 0 }]]
-    },
-    "Delete OVH Email": {
-      "ai_tool": [[{ "node": "AI Assistant with Email", "type": "ai_tool", "index": 0 }]]
     }
   },
-  "active": false,
+  "nodeGroups": [],
+  "tags": [],
+  "active": true,
   "settings": {
     "executionOrder": "v1",
     "binaryMode": "separate",
     "availableInMCP": true
-  },
-  "nodeGroups": [],
-  "tags": []
+  }
 }
