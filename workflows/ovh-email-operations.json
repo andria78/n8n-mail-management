@@ -13,15 +13,61 @@
     },
     {
       "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "condition-1",
+              "leftValue": "={{ $json.action }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "mark"
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "switch-node-if-f4a6",
+      "name": "Route Action",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [480, 304]
+    },
+    {
+      "parameters": {
         "authentication": "coreImapAccount",
         "resource": "email",
-        "mailboxes": ["INBOX"],
-        "emailDateRange": { "since": "" },
-        "emailFlags": { "recent": true },
+        "operation": "getEmailsList",
+        "mailboxes": ["={{ $json.mailbox || 'INBOX' }}"],
+        "emailDateRange": {
+          "since": "={{ $json.since }}",
+          "before": "={{ $json.before }}"
+        },
+        "emailFlags": {
+          "seen": "={{ $json.seen }}",
+          "answered": "={{ $json.answered }}",
+          "flagged": "={{ $json.flagged }}",
+          "deleted": "={{ $json.deleted }}",
+          "draft": "={{ $json.draft }}",
+          "recent": false
+        },
         "customLabels": {},
-        "emailSearchFilters": {},
+        "emailSearchFilters": {
+          "from": "={{ $json.from }}",
+          "subject": "={{ $json.subject }}",
+          "text": "={{ $json.searchText }}",
+          "to": "={{ $json.to }}",
+          "cc": "={{ $json.cc }}",
+          "bcc": "={{ $json.bcc }}"
+        },
         "includeParts": ["textContent", "flags", "size"],
-        "limit": 50
+        "limit": "={{ $json.limit || 50 }}"
       },
       "id": "68c803c6-c82c-4d27-bda9-38f09ced2b16",
       "name": "Read Emails",
@@ -42,11 +88,42 @@
       "typeVersion": 3.4,
       "position": [960, 304],
       "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "authentication": "coreImapAccount",
+        "resource": "email",
+        "operation": "setEmailFlags",
+        "mailboxPath": {
+          "__rl": true,
+          "mode": "list",
+          "value": "={{ $json.mailbox || 'INBOX' }}"
+        },
+        "emailUid": "={{ $json.emailUid }}",
+        "flags": {
+          "\\Flagged": "={{ $json.markFlagged }}",
+          "\\Seen": "={{ $json.markAsRead }}",
+          "\\Deleted": "={{ $json.markDeleted }}",
+          "\\Answered": "={{ $json.markAnswered }}"
+        }
+      },
+      "id": "b1c5d2e3-f4a6-7890-abcd-ef1234567890",
+      "name": "Set Email Flags",
+      "type": "n8n-nodes-imap-enhanced.imapEnhanced",
+      "typeVersion": 1,
+      "position": [640, 600],
+      "alwaysOutputData": true
     }
   ],
   "connections": {
     "Start": {
-      "main": [[{ "node": "Read Emails", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Route Action", "type": "main", "index": 0 }], []]
+    },
+    "Route Action": {
+      "main": [
+        [{ "node": "Read Emails", "type": "main", "index": 0 }],
+        [{ "node": "Set Email Flags", "type": "main", "index": 0 }]
+      ]
     },
     "Read Emails": {
       "main": [[{ "node": "Format Read Output", "type": "main", "index": 0 }]]
