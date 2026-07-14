@@ -21,7 +21,7 @@ Check Message Text (if v1: $json.message.text is not empty?)
    └─ false ─────────────▶ Fallback Message (set) ──────────────────┤
                                                                       │
 AI Assistant with Email (langchain agent) ◀──────────────────────────┘
-    ├── ai_languageModel ──▶ Ollama (gemma4:e4b, local)
+    ├── ai_languageModel ──▶ Ollama (gemma4:26b-mlx, local)
     ├── ai_memory        ──▶ Simple Memory (per chat.id, window 10)
     └── ai_tool         ──▶ Read OVH Emails (toolWorkflow → sub-wf)
         │  main
@@ -76,8 +76,8 @@ Connections: [`workflows/telegram-ollama-chatbot.json`](workflows/telegram-ollam
 
 ### 2.8 Ollama — `lmChatOllama`
 - **Type/version:** `@n8n/n8n-nodes-langchain.lmChatOllama` v1 ([`workflows/telegram-ollama-chatbot.json`](workflows/telegram-ollama-chatbot.json:30])
-- **Config:** `model: "gemma4:e4b"` ([`workflows/telegram-ollama-chatbot.json`](workflows/telegram-ollama-chatbot.json:23]); `options.temperature: 0.7` ([`workflows/telegram-ollama-chatbot.json`](workflows/telegram-ollama-chatbot.json:25])
-- **Why:** Local, private, free inference. `temperature: 0.7` balances factual accuracy (email data) with natural phrasing. Reached via `host.docker.internal:11434` (Ollama on the Mac host).
+- **Config:** `model: "gemma4:26b-mlx"` ([`workflows/telegram-ollama-chatbot.json`](workflows/telegram-ollama-chatbot.json:23]); `options.temperature: 0.7` ([`workflows/telegram-ollama-chatbot.json`](workflows/telegram-ollama-chatbot.json:25])
+- **Why:** Local, private, free inference. `gemma4:26b-mlx` is a 26B Gemma 4 model in MLX format (Apple-Silicon-native, faster than GGUF at equal params) — chosen over the previous 8B `gemma4:e4b` after a tool-calling benchmark showed it is both more accurate (perfect on read/mark/no-tool cases) and faster on this M5 Pro 48 GB host. `temperature: 0.7` balances factual accuracy (email data) with natural phrasing. Reached via `host.docker.internal:11434` (Ollama on the Mac host).
 
 ### 2.9 Simple Memory — `memoryBufferWindow`
 - **Type/version:** `@n8n/n8n-nodes-langchain.memoryBufferWindow` v1.4 ([`workflows/telegram-ollama-chatbot.json`](workflows/telegram-ollama-chatbot.json:63])
