@@ -54,7 +54,7 @@
       "name": "Route Action",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [560, 448]
+      "position": [400, 448]
     },
     {
       "parameters": {
@@ -66,12 +66,11 @@
           "before": "={{ $json.before }}"
         },
         "emailFlags": {
-          "answered": "={{ $json.answered }}",
-          "deleted": "={{ $json.deleted }}",
-          "draft": "={{ $json.draft }}",
-          "flagged": "={{ $json.flagged }}",
-          "recent": false,
-          "seen": "={{ $json.seen }}"
+          "answered": "={{ ($json.answered === '' || $json.answered === undefined || $json.answered === null) ? undefined : ($json.answered === true || $json.answered === 'true') }}",
+          "deleted": "={{ ($json.deleted === '' || $json.deleted === undefined || $json.deleted === null) ? undefined : ($json.deleted === true || $json.deleted === 'true') }}",
+          "draft": "={{ ($json.draft === '' || $json.draft === undefined || $json.draft === null) ? undefined : ($json.draft === true || $json.draft === 'true') }}",
+          "flagged": "={{ ($json.flagged === '' || $json.flagged === undefined || $json.flagged === null) ? undefined : ($json.flagged === true || $json.flagged === 'true') }}",
+          "seen": "={{ ($json.seen === '' || $json.seen === undefined || $json.seen === null) ? undefined : ($json.seen === true || $json.seen === 'true') }}"
         },
         "customLabels": {},
         "emailSearchFilters": {
@@ -83,26 +82,26 @@
           "to": "={{ $json.to }}"
         },
         "includeParts": ["textContent", "flags", "size"],
-        "limit": "={{ $json.limit || 5 }}"
+        "limit": "={{ $json.limit || 50 }}"
       },
       "id": "68c803c6-c82c-4d27-bda9-38f09ced2b16",
       "name": "Read Emails",
       "type": "n8n-nodes-imap-enhanced.imapEnhanced",
       "typeVersion": 1,
-      "position": [840, 656],
+      "position": [640, 304],
       "alwaysOutputData": true
     },
     {
       "parameters": {
-        "mode": "raw",
-        "jsonOutput": "={{ (() => { const items = $input.all(); const emails = items.map(item => { const env = item.json.envelope || {}; const fromInfo = env.from && env.from[0] ? (env.from[0].name || env.from[0].address) : ''; const labels = item.json.labels || {}; const flagList = Object.keys(labels).filter(k => labels[k]).join(', ') || 'none'; const bodyText = item.json.textContent || ''; const bodyPreview = bodyText.length > 300 ? bodyText.substring(0, 300) + '...' : bodyText; return { uid: item.json.uid, subject: env.subject || '', from: fromInfo, date: env.date || '', size: item.json.size, flags: flagList, bodyPreview: bodyPreview }; }); let summary = 'Emails: ' + emails.length; emails.forEach((e, i) => { summary += ' | ' + (i + 1) + ': ' + e.subject + ' - ' + e.from + ' - ' + e.date; }); return { count: emails.length, summary, emails }; })() }}"
+        "mode": "runOnceForAllItems",
+        "language": "javaScript",
+        "jsCode": "const items = $input.all();\nconst emails = items.map(item => {\n  const json = item.json;\n  const env = json.envelope || {};\n  const fromInfo = env.from && env.from[0] ? (env.from[0].name || env.from[0].address) : '';\n  const flagsObj = json.flags || json.labels || {};\n  const flagList = Object.keys(flagsObj).filter(k => flagsObj[k]).join(', ') || 'none';\n  const bodyText = json.textContent || '';\n  const bodyPreview = bodyText.length > 300 ? bodyText.substring(0, 300) + '...' : bodyText;\n  return {\n    uid: json.uid,\n    subject: env.subject || '',\n    from: fromInfo,\n    date: env.date || '',\n    size: json.size,\n    flags: flagList,\n    bodyPreview: bodyPreview\n  };\n});\n\nlet summary = 'Emails: ' + emails.length;\nemails.forEach((e, i) => {\n  summary += ' | ' + (i + 1) + ': ' + e.subject + ' - ' + e.from + ' - ' + e.date;\n});\n\nreturn [{ json: { count: emails.length, summary, emails } }];"
       },
-      "id": "3ed51d73-4d79-49a7-aa57-267febd5d4b4",
-      "name": "Format Read Output",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [1120, 656],
-      "alwaysOutputData": true
+      "id": "e6264160-9752-459c-9422-f7fe349dc099",
+      "name": "Format Results",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [960, 304]
     },
     {
       "parameters": {
@@ -126,8 +125,7 @@
       "name": "Set Email Flags",
       "type": "n8n-nodes-imap-enhanced.imapEnhanced",
       "typeVersion": 1,
-      "position": [840, 272],
-      "alwaysOutputData": true
+      "position": [640, 608]
     }
   ],
   "connections": {
@@ -144,7 +142,7 @@
       ]
     },
     "Read Emails": {
-      "main": [[{ "node": "Format Read Output", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Format Results", "type": "main", "index": 0 }]]
     }
   },
   "nodeGroups": [],
