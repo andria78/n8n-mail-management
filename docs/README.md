@@ -17,7 +17,7 @@ You send a message in Telegram such as *"show my unread emails"* or *"mark the i
 | Component | File | Role |
 |-----------|------|------|
 | n8n runtime | [`docker-compose.yml`](docker-compose.yml:1) | Containerized n8n, bound to localhost, exposed via Cloudflare Tunnel |
-| Chatbot workflow | [`workflows/telegram-ollama-chatbot.json`](workflows/telegram-ollama-chatbot.json:1) | Telegram → AI Agent (Ollama) → Telegram, with email tool |
+| Chatbot workflow | [`workflows/telegram-ollama-chatbot.json`](workflows/telegram-ollama-chatbot.json:1) | Telegram → guards → AI Agent (Ollama) → Telegram, with email tool |
 | Email sub-workflow | [`workflows/ovh-email-operations.json`](workflows/ovh-email-operations.json:1) | Reusable IMAP read/mark capability, called as a tool |
 | DNS migration guide | [`plans/guide-ovh-cloudflare.md`](plans/guide-ovh-cloudflare.md:1) | How the domain was moved OVH → Cloudflare for the tunnel |
 | Build plan | [`plans/telegram-ollama-chatbot-workflow.md`](plans/telegram-ollama-chatbot-workflow.md:1) | Original step-by-step build notes |
@@ -33,27 +33,27 @@ You send a message in Telegram such as *"show my unread emails"* or *"mark the i
 │  Telegram    │ ─────────────▶ │ Cloudflare edge  │
 │  (user chat) │                │ n8n.andrianarison│
 └──────────────┘                │ .com  (TLS, WAF, │
-        ▲                       │  DDoS protection)│
-        │ HTTPS webhook         └────────┬─────────┘
-        │                                │ Cloudflare Tunnel
-        │                        (encrypted, no open port)
-        │                                │
-        │                       ┌────────▼─────────┐
-        │                       │  cloudflared     │  runs on the Mac
-        │                       │  (localhost:5678)│
-        │                       └────────┬─────────┘
-        │                                │ http://127.0.0.1:5678
-        │                       ┌────────▼─────────┐
-        │                       │  n8n container   │
-        │                       │  (Docker, Mac)   │
-        │                       └────────┬─────────┘
-        │              ┌────────────────┼────────────────┐
-        │              │                │                 │
-        │     ┌────────▼─────┐  ┌──────▼──────┐  ┌──────▼────────┐
-        │     │ Ollama       │  │ OVH Email   │  │ Telegram API  │
-        │     │ (local LLM)  │  │ (IMAP)      │  │ (reply send)  │
-        │     │ :11434       │  │ mail.ovh.net│  │                │
-        │     └──────────────┘  └─────────────┘  └───────────────┘
+         ▲                       │  DDoS protection)│
+         │ HTTPS webhook         └────────┬─────────┘
+         │                                │ Cloudflare Tunnel
+         │                        (encrypted, no open port)
+         │                                │
+         │                       ┌────────▼─────────┐
+         │                       │  cloudflared     │  runs on the Mac
+         │                       │  (localhost:5678)│
+         │                       └────────┬─────────┘
+         │                                │ http://127.0.0.1:5678
+         │                       ┌────────▼─────────┐
+         │                       │  n8n container   │
+         │                       │  (Docker, Mac)   │
+         │                       └────────┬─────────┘
+         │              ┌────────────────┼────────────────┐
+         │              │                │                 │
+         │     ┌────────▼─────┐  ┌──────▼──────┐  ┌──────▼────────┐
+         │     │ Ollama       │  │ OVH Email   │  │ Telegram API  │
+         │     │ (local LLM)  │  │ (IMAP)      │  │ (reply send)  │
+         │     │ :11434       │  │ mail.ovh.net│  │                │
+         │     └──────────────┘  └─────────────┘  └───────────────┘
 ```
 
 Key property: **the Mac exposes no inbound port to the internet.** All ingress is an *outbound* connection from `cloudflared` to Cloudflare. This is why a residential Mac with a dynamic IP and possibly CGNAT can still host a publicly reachable webhook.
@@ -61,20 +61,30 @@ Key property: **the Mac exposes no inbound port to the internet.** All ingress i
 ### 2.2 Workflow topology
 
 ```
- Telegram Trigger                 AI Agent (langchain)
- (webhook)                ─────▶  ├─ Ollama Chat Model  (gemma4:e4b, local)
-   │                               ├─ Simple Memory       (per chat.id, window 10)
-   │                               └─ Read OVH Emails     (toolWorkflow → sub-wf)
-   │                                        │
-   ▼                                        ▼
- Split Long Reply                ┌──────────────────────────┐
- (chunk ≤ 3900 chars)           │ OVH Email Operations wf  │
-   │                             │  read / mark via IMAP    │
-   ▼                             └──────────────────────────┘
+ Telegram Trigger
+ (webhook)                ─────▶  Check Message Text (if: text?)
+                                   ├─ no  ─▶ Fallback Message ─────────┐
+                                   └─ yes ─▶ Check Reset (if: /reset|/start?)
+                                                ├─ yes ─▶ Reset Memory Reply ─┐
+                                                └─ no  ─▶ Extract Chat Context ─┐
+                                                                                │
+ AI Agent (langchain) ◀───────────────────────────────────────────────────────┘
+   ├─ Ollama Chat Model  (gemma4:e4b, local)
+   ├─ Simple Memory       (per chat.id, window 10)
+   └─ Read OVH Emails     (toolWorkflow → sub-wf)
+                                        │
+                                        ▼
+                            ┌──────────────────────────┐
+                            │ OVH Email Operations wf  │
+                            │  guard → read / mark IMAP│
+                            └──────────────────────────┘
+ Split Long Reply (chunk ≤ 3900 chars)
+   │
+   ▼
  Send Reply to Telegram
 ```
 
-The chatbot workflow is the **orchestrator/UX layer**; the email workflow is a **capability layer** it calls as a tool. See [`docs/workflow-telegram-chatbot.md`](docs/workflow-telegram-chatbot.md) and [`docs/workflow-ovh-email.md`](docs/workflow-ovh-email.md).
+The chatbot workflow now starts with two **guard `if` nodes** (`Check Message Text`, `Check Reset Command`) that keep non-text and command inputs out of the LLM, and the email sub-workflow starts with **validation `if` nodes** (`Validate Action`, `Validate Mark`) that fail closed on bad input. The chatbot workflow is the **orchestrator/UX layer**; the email workflow is a **capability layer** it calls as a tool. See [`docs/workflow-telegram-chatbot.md`](docs/workflow-telegram-chatbot.md) and [`docs/workflow-ovh-email.md`](docs/workflow-ovh-email.md). The reasoning behind this guard pattern is collected in [`docs/rationale.md`](docs/rationale.md) G.
 
 ---
 
@@ -82,7 +92,7 @@ The chatbot workflow is the **orchestrator/UX layer**; the email workflow is a *
 
 | Document | What it covers |
 |----------|----------------|
-| **[`docs/rationale.md`](docs/rationale.md)** | The centerpiece: *why* every major decision was made (networking, memory, date handling, splitting, tool pattern, IMAP coercion, etc.) |
+| **[`docs/rationale.md`](docs/rationale.md)** | The centerpiece: *why* every major decision was made (networking, memory, date handling, splitting, tool pattern, IMAP coercion, guard/validation `if` blocks, etc.) — including a **Lessons learned** section (G) |
 | **[`docs/networking-cloudflare.md`](docs/networking-cloudflare.md)** | Cloudflare Tunnel, OVH→Cloudflare DNS migration, and every `docker-compose.yml` environment variable explained |
 | **[`docs/workflow-telegram-chatbot.md`](docs/workflow-telegram-chatbot.md)** | Node-by-node walkthrough of the chatbot workflow |
 | **[`docs/workflow-ovh-email.md`](docs/workflow-ovh-email.md)** | Node-by-node walkthrough of the email sub-workflow |
@@ -97,7 +107,7 @@ These principles recur throughout the implementation and are detailed in [`docs/
 2. **No open inbound ports** — Cloudflare Tunnel provides public HTTPS without router/firewall changes, surviving dynamic IPs and CGNAT.
 3. **Deterministic date handling** — all "today / last 7 / 14 / 30 days" values are pre-computed in n8n expressions (timezone-aware) and injected into the prompt, removing the LLM's weakest spot (date math).
 4. **Separation of concerns** — the email capability is a standalone, reusable, MCP-exposed sub-workflow rather than inline nodes, so it can be tested, versioned, and reused independently.
-5. **Resilience by default** — `restart: unless-stopped`, an external persistent volume, `alwaysOutputData`, and explicit type coercion prevent silent failures.
+5. **Resilience by default (fail closed)** — `restart: unless-stopped`, an external persistent volume, `alwaysOutputData`, explicit type coercion, **and guard/validation `if` nodes** keep bad or ambiguous input from reaching the LLM or a mutating IMAP call.
 6. **Platform limits respected** — Telegram's 4096-char message cap is handled by a chunking node that splits on email boundaries.
 
 ---

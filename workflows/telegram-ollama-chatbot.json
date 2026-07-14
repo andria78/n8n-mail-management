@@ -3,33 +3,43 @@
   "nodes": [
     {
       "parameters": {
-        "updates": ["message"],
+        "updates": [
+          "message"
+        ],
         "additionalFields": {}
       },
       "id": "2c0cc6ed-c04f-487c-96e6-7ce8cbb1cde9",
       "name": "Telegram Message Received",
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.3,
-      "position": [2000, -208],
+      "position": [
+        2000,
+        -208
+      ],
       "webhookId": "wh-telegram-001"
     },
     {
       "parameters": {
         "model": "gemma4:e4b",
-        "options": { "temperature": 0.7 }
+        "options": {
+          "temperature": 0.7
+        }
       },
       "id": "a9bcb863-2b53-412f-be27-bd0092a48e2f",
       "name": "Ollama",
       "type": "@n8n/n8n-nodes-langchain.lmChatOllama",
       "typeVersion": 1,
-      "position": [2096, 48]
+      "position": [
+        2096,
+        48
+      ]
     },
     {
       "parameters": {
         "promptType": "define",
         "text": "={{ \"Chat ID: \" + $('Telegram Message Received').item.json.message.chat.id + \"\\nCurrent date: \" + $now.setZone('Europe/Paris').toFormat('yyyy-MM-dd') + \" (Europe/Paris).\\nPre-computed date filters for Read OVH Emails:\\n- last 7 days  -> since=\" + $now.setZone('Europe/Paris').minus({days:7}).toFormat('yyyy-MM-dd') + \"\\n- last 14 days -> since=\" + $now.setZone('Europe/Paris').minus({days:14}).toFormat('yyyy-MM-dd') + \"\\n- last 30 days -> since=\" + $now.setZone('Europe/Paris').minus({days:30}).toFormat('yyyy-MM-dd') + \"\\n- today only   -> since=\" + $now.setZone('Europe/Paris').toFormat('yyyy-MM-dd') + \"\\n\\n\" + ($json.message.text || \"\") }}",
         "options": {
-          "systemMessage": "You are a helpful Telegram assistant with access to OVH Outlook emails.\n\nYou have these tools available:\n1. Read OVH Emails - Read and filter emails, or mark them as read/unread/flagged. Use filters like seen (true=read, false=unread), from, subject, since, before, limit.\n\nWhen the user asks about emails:\n- \"Check my inbox\" → use Read OVH Emails\n- \"Show unread emails\" → use Read OVH Emails with seen=false\n- \"Show emails from someone\" → use Read OVH Emails with from=\"address\"\n- \"Show only the last 3 emails\" → use Read OVH Emails with limit=3\n- \"Mark email as read\" → use Read OVH Emails with action=\"mark\", emailUid=..., markAsRead=true\n\nDATE HANDLING (CRITICAL):\n- The current date and pre-computed date filters (last 7 days, last 14 days, last 30 days, today) are given at the top of the user's message. Use them directly.\n- If the user says \"last 7 days\", \"past week\", \"this week\", \"recent week\" → call Read OVH Emails with since=<the \"last 7 days\" value from the message>. Do NOT ask the user for any date or year.\n- If the user says \"last 30 days\", \"this month\" → use the \"last 30 days\" value.\n- If the user gives a specific date (e.g. \"July 10th\") → use that date (assume the current year from the message).\n- NEVER reply by asking the user to provide a start/end date. The dates are already provided. Asking for a date is a failure.\n\nOUTPUT RULES:\n- The Read OVH Emails tool returns up to limit emails plus a total count. Always report the total count.\n- By default, when listing emails show the 10 most recent and say if there are more (e.g. \"There are 30 total emails\").\n- If the user explicitly asks to see more or all of them (e.g. \"show me the 30\", \"show all\", \"show the rest\"), list EVERY email the tool returned - do not stop at 10. Long replies are automatically split into separate messages, so include all of them.\n- Separate emails with a blank line.\n\nCRITICAL RULES - YOU MUST FOLLOW THEM:\n\n1. NEVER INVENT EMAIL DATA. If the Read OVH Emails tool returns an error or an empty result, you MUST say \"The email tool returned an error\" or \"No emails found\" — do NOT make up email subjects, senders, or content.\n\n2. ONLY report information that the tool actually returned. Do not add fake details like sender addresses, subjects, or snippets that were not provided by the tool.\n\n3. If the tool response contains an \"error\" field, tell the user there was an error and ask them to try again later. Never pretend the tool succeeded when it failed.\n\n4. When listing emails, ONLY list what the tool returned. If the tool returned no data, say \"No results were returned.\"\n\n5. IMPORTANT: Reading emails does NOT mark them as read. They stay unread unless you explicitly use action=\"mark\" with markAsRead=true.\n\n6. Be concise and friendly. Respond in the same language the user writes in.\n\n7. Do NOT use any markdown, HTML, or special formatting in your responses. Write in plain text only. No bold, no italics, no code blocks, no links.",
+          "systemMessage": "You are a helpful Telegram assistant with access to OVH Outlook emails via the \"Read OVH Emails\" tool.\n\nDATE HANDLING (CRITICAL):\n- The current date and pre-computed date filters are at the top of the user message. Use them directly. NEVER ask the user for dates.\n\nOUTPUT RULES:\n- Always report the total count of emails found.\n- By default show up to 10 most recent emails with a summary of total count.\n- If the user asks to see more, list ALL returned emails.\n- Respond in the same language the user writes in.\n- Use plain text only - no markdown, HTML, or special formatting.\n- NEVER invent email data. Only report what the tool actually returns.",
           "enableStreaming": false
         }
       },
@@ -37,19 +47,25 @@
       "name": "AI Assistant with Email",
       "type": "@n8n/n8n-nodes-langchain.agent",
       "typeVersion": 3.1,
-      "position": [2240, -208]
+      "position": [
+        2240,
+        -208
+      ]
     },
     {
       "parameters": {
         "sessionIdType": "customKey",
-        "sessionKey": "={{ nodeJson('Telegram Message Received', 'message.chat.id') }}",
+        "sessionKey": "={{ $json.chatId }}",
         "contextWindowLength": 10
       },
       "id": "d4e5f6a7-b8c9-4d0e-a1b2-c3d4e5f6a7b8",
       "name": "Simple Memory",
       "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
       "typeVersion": 1.4,
-      "position": [2288, 48]
+      "position": [
+        2288,
+        48
+      ]
     },
     {
       "parameters": {
@@ -67,33 +83,130 @@
       "name": "Send Reply to Telegram",
       "type": "n8n-nodes-base.telegram",
       "typeVersion": 1.2,
-      "position": [2800, -208],
+      "position": [
+        2800,
+        -208
+      ],
       "webhookId": "wh-telegram-reply-001"
     },
     {
       "parameters": {
-        "description": "Read emails from your OVH mailbox. By default returns up to 50 of the most recent emails from the last 30 days. When the user asks to see a specific number (e.g. \"show me the 30\"), pass that number as limit so every requested email is returned. Optional filters: seen (true=read only, false=unread only), from, subject, searchText, flagged, answered, since/before dates (YYYY-MM-DD; pass since to look further back in time), mailbox, and limit. To mark emails as read/unread/flagged/deleted set action=mark with emailUid and markAsRead/markFlagged/markDeleted.",
-        "workflowId": { "__rl": true, "mode": "id", "value": "me7ect2HVlIIo4us" },
+        "description": "Read & filter OVH emails from your mailbox. Optional filters: seen (true=read, false=unread), from, subject, searchText (body), flagged, answered, since/before (YYYY-MM-DD), mailbox, limit (default 50). For marking: set action=mark with emailUid and markAsRead/markFlagged/markDeleted.",
+        "workflowId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "me7ect2HVlIIo4us"
+        },
         "workflowInputs": {
           "mappingMode": "defineBelow",
           "value": {},
           "matchingColumns": [],
           "schema": [
-            { "id": "action", "displayName": "Action: \"read\" or \"mark\"", "required": false, "type": "string", "display": true },
-            { "id": "seen", "displayName": "Filter: seen (true=read only, false=unread only)", "required": false, "type": "string", "display": true },
-            { "id": "from", "displayName": "Filter: sender email address", "required": false, "type": "string", "display": true },
-            { "id": "subject", "displayName": "Filter: email subject", "required": false, "type": "string", "display": true },
-            { "id": "searchText", "displayName": "Filter: text in email body", "required": false, "type": "string", "display": true },
-            { "id": "flagged", "displayName": "Filter: flagged/important (true/false)", "required": false, "type": "string", "display": true },
-            { "id": "answered", "displayName": "Filter: answered/replied (true/false)", "required": false, "type": "string", "display": true },
-            { "id": "since", "displayName": "Filter: emails after date (YYYY-MM-DD)", "required": false, "type": "string", "display": true },
-            { "id": "before", "displayName": "Filter: emails before date (YYYY-MM-DD)", "required": false, "type": "string", "display": true },
-            { "id": "mailbox", "displayName": "Filter: mailbox folder (default: INBOX)", "required": false, "type": "string", "display": true },
-            { "id": "limit", "displayName": "Max results (default: 50)", "required": false, "type": "number", "display": true },
-            { "id": "emailUid", "displayName": "For mark action: email UID(s) comma-separated", "required": false, "type": "string", "display": true },
-            { "id": "markAsRead", "displayName": "For mark action: mark as read (true/false)", "required": false, "type": "string", "display": true },
-            { "id": "markFlagged", "displayName": "For mark action: mark as flagged/important (true/false)", "required": false, "type": "string", "display": true },
-            { "id": "markDeleted", "displayName": "For mark action: mark as deleted (true/false)", "required": false, "type": "string", "display": true }
+            {
+              "id": "action",
+              "displayName": "Action: \"read\" or \"mark\"",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "seen",
+              "displayName": "Filter: seen (true=read only, false=unread only)",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "from",
+              "displayName": "Filter: sender email address",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "subject",
+              "displayName": "Filter: email subject",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "searchText",
+              "displayName": "Filter: text in email body",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "flagged",
+              "displayName": "Filter: flagged/important (true/false)",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "answered",
+              "displayName": "Filter: answered/replied (true/false)",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "since",
+              "displayName": "Filter: emails after date (YYYY-MM-DD)",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "before",
+              "displayName": "Filter: emails before date (YYYY-MM-DD)",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "mailbox",
+              "displayName": "Filter: mailbox folder (default: INBOX)",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "limit",
+              "displayName": "Max results (default: 50)",
+              "required": false,
+              "type": "number",
+              "display": true
+            },
+            {
+              "id": "emailUid",
+              "displayName": "For mark action: email UID(s) comma-separated",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "markAsRead",
+              "displayName": "For mark action: mark as read (true/false)",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "markFlagged",
+              "displayName": "For mark action: mark as flagged/important (true/false)",
+              "required": false,
+              "type": "string",
+              "display": true
+            },
+            {
+              "id": "markDeleted",
+              "displayName": "For mark action: mark as deleted (true/false)",
+              "required": false,
+              "type": "string",
+              "display": true
+            }
           ],
           "attemptToConvertTypes": false,
           "convertFieldsToString": false
@@ -103,7 +216,10 @@
       "name": "Read OVH Emails",
       "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
       "typeVersion": 2.2,
-      "position": [2480, 48]
+      "position": [
+        2480,
+        48
+      ]
     },
     {
       "parameters": {
@@ -114,22 +230,30 @@
       "name": "Split Long Reply",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [2560, -208]
+      "position": [
+        2560,
+        -208
+      ]
     },
     {
-      "id": "38f31730-afb5-4034-8573-24185d71b8ff",
+      "id": "c5a51202-e11d-45be-8c2d-bf973dce8c4e",
       "name": "Check Message Text",
       "type": "n8n-nodes-base.if",
-      "typeVersion": 2.2,
-      "position": [2120, -208],
+      "typeVersion": 1,
+      "position": [
+        2048,
+        -208
+      ],
       "parameters": {
         "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
-          "conditions": [
-            { "id": "cond-text", "leftValue": "={{ $json.message.text }}", "operator": { "type": "string", "operation": "isNotEmpty" }, "rightValue": "" }
-          ],
-          "combinator": "and"
-        }
+          "string": [
+            {
+              "value1": "={{ $json.message.text }}",
+              "operation": "isNotEmpty"
+            }
+          ]
+        },
+        "combineOperation": "all"
       }
     },
     {
@@ -137,41 +261,223 @@
       "name": "Fallback Message",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [2120, 80],
+      "position": [
+        2288,
+        -384
+      ],
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "={{ { output: \"Désolé, je ne peux traiter que les messages texte pour le moment.\" } }}",
+        "jsonOutput": "={{ { output: \"D\u00e9sol\u00e9, je ne peux traiter que les messages texte pour le moment.\" } }}",
         "options": {}
       }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": false,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "condition-reset-1",
+              "leftValue": "={{ $json.message.text.toLowerCase() }}",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "rightValue": "/reset"
+            },
+            {
+              "id": "condition-reset-2",
+              "leftValue": "={{ $json.message.text.toLowerCase() }}",
+              "operator": {
+                "type": "string",
+                "operation": "contains"
+              },
+              "rightValue": "/start"
+            }
+          ],
+          "combinator": "or"
+        },
+        "options": {}
+      },
+      "id": "c5a51203-e11d-45be-8c2d-bf973dce8c4e",
+      "name": "Check Reset Command",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        2176,
+        -208
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ { output: \"\ud83d\udd04 Session r\u00e9initialis\u00e9e ! Je suis pr\u00eat pour une nouvelle conversation. Pose-moi ta question !\" } }}",
+        "options": {}
+      },
+      "id": "066b89d9-2d9a-4fdb-a17c-26d1b299f367",
+      "name": "Reset Memory Reply",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2368,
+        -384
+      ]
+    },
+    {
+      "parameters": {
+        "language": "javaScript",
+        "jsCode": "const chatId = $json.message.chat.id;\nreturn [{ json: { ...$json, chatId } }];"
+      },
+      "id": "extract-chat-id-001",
+      "name": "Extract Chat Context",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        2080,
+        48
+      ]
     }
   ],
   "connections": {
     "Telegram Message Received": {
-      "main": [[{ "node": "Check Message Text", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Check Message Text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Check Message Text": {
       "main": [
-        [{ "node": "AI Assistant with Email", "type": "main", "index": 0 }],
-        [{ "node": "Fallback Message", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Check Reset Command",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fallback Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Fallback Message": {
-      "main": [[{ "node": "Send Reply to Telegram", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Send Reply to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "AI Assistant with Email": {
-      "main": [[{ "node": "Split Long Reply", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Split Long Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Split Long Reply": {
-      "main": [[{ "node": "Send Reply to Telegram", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Send Reply to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Simple Memory": {
-      "ai_memory": [[{ "node": "AI Assistant with Email", "type": "ai_memory", "index": 0 }]]
+      "ai_memory": [
+        [
+          {
+            "node": "AI Assistant with Email",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Ollama": {
-      "ai_languageModel": [[{ "node": "AI Assistant with Email", "type": "ai_languageModel", "index": 0 }]]
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Assistant with Email",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Read OVH Emails": {
-      "ai_tool": [[{ "node": "AI Assistant with Email", "type": "ai_tool", "index": 0 }]]
+      "ai_tool": [
+        [
+          {
+            "node": "AI Assistant with Email",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Reset Command": {
+      "main": [
+        [
+          {
+            "node": "Reset Memory Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Extract Chat Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Reset Memory Reply": {
+      "main": [
+        [
+          {
+            "node": "Send Reply to Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Chat Context": {
+      "main": [
+        [
+          {
+            "node": "AI Assistant with Email",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "nodeGroups": [],
