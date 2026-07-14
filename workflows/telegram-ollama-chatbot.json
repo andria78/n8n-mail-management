@@ -27,7 +27,7 @@
     {
       "parameters": {
         "promptType": "define",
-        "text": "={{ \"Current date: \" + $now.setZone('Europe/Paris').toFormat('yyyy-MM-dd') + \" (Europe/Paris).\\nPre-computed date filters for Read OVH Emails:\\n- last 7 days  -> since=\" + $now.setZone('Europe/Paris').minus({days:7}).toFormat('yyyy-MM-dd') + \"\\n- last 14 days -> since=\" + $now.setZone('Europe/Paris').minus({days:14}).toFormat('yyyy-MM-dd') + \"\\n- last 30 days -> since=\" + $now.setZone('Europe/Paris').minus({days:30}).toFormat('yyyy-MM-dd') + \"\\n- today only   -> since=\" + $now.setZone('Europe/Paris').toFormat('yyyy-MM-dd') + \"\\n\\n\" + ($json.message.text || \"\") }}",
+        "text": "={{ \"Chat ID: \" + $('Telegram Message Received').item.json.message.chat.id + \"\\nCurrent date: \" + $now.setZone('Europe/Paris').toFormat('yyyy-MM-dd') + \" (Europe/Paris).\\nPre-computed date filters for Read OVH Emails:\\n- last 7 days  -> since=\" + $now.setZone('Europe/Paris').minus({days:7}).toFormat('yyyy-MM-dd') + \"\\n- last 14 days -> since=\" + $now.setZone('Europe/Paris').minus({days:14}).toFormat('yyyy-MM-dd') + \"\\n- last 30 days -> since=\" + $now.setZone('Europe/Paris').minus({days:30}).toFormat('yyyy-MM-dd') + \"\\n- today only   -> since=\" + $now.setZone('Europe/Paris').toFormat('yyyy-MM-dd') + \"\\n\\n\" + ($json.message.text || \"\") }}",
         "options": {
           "systemMessage": "You are a helpful Telegram assistant with access to OVH Outlook emails.\n\nYou have these tools available:\n1. Read OVH Emails - Read and filter emails, or mark them as read/unread/flagged. Use filters like seen (true=read, false=unread), from, subject, since, before, limit.\n\nWhen the user asks about emails:\n- \"Check my inbox\" → use Read OVH Emails\n- \"Show unread emails\" → use Read OVH Emails with seen=false\n- \"Show emails from someone\" → use Read OVH Emails with from=\"address\"\n- \"Show only the last 3 emails\" → use Read OVH Emails with limit=3\n- \"Mark email as read\" → use Read OVH Emails with action=\"mark\", emailUid=..., markAsRead=true\n\nDATE HANDLING (CRITICAL):\n- The current date and pre-computed date filters (last 7 days, last 14 days, last 30 days, today) are given at the top of the user's message. Use them directly.\n- If the user says \"last 7 days\", \"past week\", \"this week\", \"recent week\" → call Read OVH Emails with since=<the \"last 7 days\" value from the message>. Do NOT ask the user for any date or year.\n- If the user says \"last 30 days\", \"this month\" → use the \"last 30 days\" value.\n- If the user gives a specific date (e.g. \"July 10th\") → use that date (assume the current year from the message).\n- NEVER reply by asking the user to provide a start/end date. The dates are already provided. Asking for a date is a failure.\n\nOUTPUT RULES:\n- The Read OVH Emails tool returns up to limit emails plus a total count. Always report the total count.\n- By default, when listing emails show the 10 most recent and say if there are more (e.g. \"There are 30 total emails\").\n- If the user explicitly asks to see more or all of them (e.g. \"show me the 30\", \"show all\", \"show the rest\"), list EVERY email the tool returned - do not stop at 10. Long replies are automatically split into separate messages, so include all of them.\n- Separate emails with a blank line.\n\nCRITICAL RULES - YOU MUST FOLLOW THEM:\n\n1. NEVER INVENT EMAIL DATA. If the Read OVH Emails tool returns an error or an empty result, you MUST say \"The email tool returned an error\" or \"No emails found\" — do NOT make up email subjects, senders, or content.\n\n2. ONLY report information that the tool actually returned. Do not add fake details like sender addresses, subjects, or snippets that were not provided by the tool.\n\n3. If the tool response contains an \"error\" field, tell the user there was an error and ask them to try again later. Never pretend the tool succeeded when it failed.\n\n4. When listing emails, ONLY list what the tool returned. If the tool returned no data, say \"No results were returned.\"\n\n5. IMPORTANT: Reading emails does NOT mark them as read. They stay unread unless you explicitly use action=\"mark\" with markAsRead=true.\n\n6. Be concise and friendly. Respond in the same language the user writes in.\n\n7. Do NOT use any markdown, HTML, or special formatting in your responses. Write in plain text only. No bold, no italics, no code blocks, no links.",
           "enableStreaming": false
@@ -42,7 +42,7 @@
     {
       "parameters": {
         "sessionIdType": "customKey",
-        "sessionKey": "={{ $('Telegram Message Received').item.json.message.chat.id }}",
+        "sessionKey": "={{ nodeJson('Telegram Message Received', 'message.chat.id') }}",
         "contextWindowLength": 10
       },
       "id": "d4e5f6a7-b8c9-4d0e-a1b2-c3d4e5f6a7b8",
@@ -53,12 +53,14 @@
     },
     {
       "parameters": {
+        "resource": "message",
+        "operation": "sendMessage",
         "chatId": "={{ $('Telegram Message Received').item.json.message.chat.id }}",
         "text": "={{ $json.output }}",
         "additionalFields": {
           "appendAttribution": false,
           "disable_web_page_preview": true,
-          "parse_mode": ""
+          "parse_mode": "={{ '' }}"
         }
       },
       "id": "b12ffc41-c2a8-4a6d-b11b-c8ef9c6dfd4b",
@@ -113,11 +115,48 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [2560, -208]
+    },
+    {
+      "id": "38f31730-afb5-4034-8573-24185d71b8ff",
+      "name": "Check Message Text",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [2120, -208],
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
+          "conditions": [
+            { "id": "cond-text", "leftValue": "={{ $json.message.text }}", "operator": { "type": "string", "operation": "isNotEmpty" }, "rightValue": "" }
+          ],
+          "combinator": "and"
+        }
+      }
+    },
+    {
+      "id": "066b89d8-2d9a-4fdb-a17c-26d1b299f366",
+      "name": "Fallback Message",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [2120, 80],
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ { output: \"Désolé, je ne peux traiter que les messages texte pour le moment.\" } }}",
+        "options": {}
+      }
     }
   ],
   "connections": {
     "Telegram Message Received": {
-      "main": [[{ "node": "AI Assistant with Email", "type": "main", "index": 0 }]]
+      "main": [[{ "node": "Check Message Text", "type": "main", "index": 0 }]]
+    },
+    "Check Message Text": {
+      "main": [
+        [{ "node": "AI Assistant with Email", "type": "main", "index": 0 }],
+        [{ "node": "Fallback Message", "type": "main", "index": 0 }]
+      ]
+    },
+    "Fallback Message": {
+      "main": [[{ "node": "Send Reply to Telegram", "type": "main", "index": 0 }]]
     },
     "AI Assistant with Email": {
       "main": [[{ "node": "Split Long Reply", "type": "main", "index": 0 }]]
