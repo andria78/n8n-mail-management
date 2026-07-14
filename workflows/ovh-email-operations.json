@@ -9,15 +9,31 @@
       "name": "Start",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.2,
-      "position": [240, 304]
+      "position": [192, 448]
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ (() => { const d = Object.assign({}, $json); if (d.input) { try { Object.assign(d, JSON.parse(d.input)); } catch(e) { if (typeof d.input === 'string' && d.input.includes('=')) { const parts = d.input.split('='); const key = parts[0].trim(); let val = parts.slice(1).join('=').trim(); if (val === 'true') val = true; else if (val === 'false') val = false; else if (!isNaN(val)) val = Number(val); d[key] = val; } } delete d.input; } return d; })() }}",
+        "includeOtherFields": true,
+        "options": {
+          "stripBinary": true
+        }
+      },
+      "id": "e644744c-7551-45ed-9cc0-38ecb3376231",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [400, 448]
     },
     {
       "parameters": {
         "conditions": {
           "options": {
-            "caseSensitive": false,
+            "caseSensitive": true,
             "leftValue": "",
-            "typeValidation": "loose"
+            "typeValidation": "strict",
+            "version": 2
           },
           "conditions": [
             {
@@ -31,62 +47,62 @@
             }
           ],
           "combinator": "and"
-        }
+        },
+        "options": {}
       },
       "id": "switch-node-if-f4a6",
       "name": "Route Action",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [480, 304]
+      "position": [560, 448]
     },
     {
       "parameters": {
         "authentication": "coreImapAccount",
         "resource": "email",
-        "operation": "getEmailsList",
         "mailboxes": ["={{ $json.mailbox || 'INBOX' }}"],
         "emailDateRange": {
           "since": "={{ $json.since }}",
           "before": "={{ $json.before }}"
         },
         "emailFlags": {
-          "seen": "={{ $json.seen }}",
           "answered": "={{ $json.answered }}",
-          "flagged": "={{ $json.flagged }}",
           "deleted": "={{ $json.deleted }}",
           "draft": "={{ $json.draft }}",
-          "recent": false
+          "flagged": "={{ $json.flagged }}",
+          "recent": false,
+          "seen": "={{ $json.seen }}"
         },
         "customLabels": {},
         "emailSearchFilters": {
+          "bcc": "={{ $json.bcc }}",
+          "cc": "={{ $json.cc }}",
           "from": "={{ $json.from }}",
           "subject": "={{ $json.subject }}",
           "text": "={{ $json.searchText }}",
-          "to": "={{ $json.to }}",
-          "cc": "={{ $json.cc }}",
-          "bcc": "={{ $json.bcc }}"
+          "to": "={{ $json.to }}"
         },
         "includeParts": ["textContent", "flags", "size"],
-        "limit": "={{ $json.limit || 50 }}"
+        "limit": "={{ $json.limit || 5 }}"
       },
       "id": "68c803c6-c82c-4d27-bda9-38f09ced2b16",
       "name": "Read Emails",
       "type": "n8n-nodes-imap-enhanced.imapEnhanced",
       "typeVersion": 1,
-      "position": [640, 304],
+      "position": [840, 656],
       "alwaysOutputData": true
     },
     {
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "={{ ({\"subject\": $json.subject, \"from\": $json.from, \"date\": $json.date, \"uid\": $json.uid, \"flags\": $json.flags, \"size\": $json.size, \"body\": $json.textContent}) }}",
+        "jsonOutput": "={{ (() => { const emails = $input.all().map(item => ({ subject: item.json.subject, from: item.json.from, date: item.json.date, uid: item.json.uid, flags: item.json.flags, size: item.json.size, body: item.json.textContent })); return { count: emails.length, emails }; })() }}",
         "options": {}
       },
       "id": "3ed51d73-4d79-49a7-aa57-267febd5d4b4",
       "name": "Format Read Output",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [960, 304],
+      "position": [1120, 656],
       "alwaysOutputData": true
     },
     {
@@ -101,28 +117,31 @@
         },
         "emailUid": "={{ $json.emailUid }}",
         "flags": {
-          "\\Flagged": "={{ $json.markFlagged }}",
-          "\\Seen": "={{ $json.markAsRead }}",
+          "\\Answered": "={{ $json.markAnswered }}",
           "\\Deleted": "={{ $json.markDeleted }}",
-          "\\Answered": "={{ $json.markAnswered }}"
+          "\\Flagged": "={{ $json.markFlagged }}",
+          "\\Seen": "={{ $json.markAsRead }}"
         }
       },
       "id": "b1c5d2e3-f4a6-7890-abcd-ef1234567890",
       "name": "Set Email Flags",
       "type": "n8n-nodes-imap-enhanced.imapEnhanced",
       "typeVersion": 1,
-      "position": [640, 600],
+      "position": [840, 272],
       "alwaysOutputData": true
     }
   ],
   "connections": {
     "Start": {
-      "main": [[{ "node": "Route Action", "type": "main", "index": 0 }], []]
+      "main": [[{ "node": "Parse Input", "type": "main", "index": 0 }]]
+    },
+    "Parse Input": {
+      "main": [[{ "node": "Route Action", "type": "main", "index": 0 }]]
     },
     "Route Action": {
       "main": [
-        [{ "node": "Read Emails", "type": "main", "index": 0 }],
-        [{ "node": "Set Email Flags", "type": "main", "index": 0 }]
+        [{ "node": "Set Email Flags", "type": "main", "index": 0 }],
+        [{ "node": "Read Emails", "type": "main", "index": 0 }]
       ]
     },
     "Read Emails": {
