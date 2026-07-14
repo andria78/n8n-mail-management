@@ -95,8 +95,7 @@
     {
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "={{ (() => { const items = $input.all(); const emails = items.map(item => { const env = item.json.envelope || {}; const fromInfo = env.from && env.from[0] ? (env.from[0].name || env.from[0].address) : ''; const labels = item.json.labels || {}; const flagList = Object.keys(labels).filter(k => labels[k]).join(', ') || 'none'; const bodyText = item.json.textContent || ''; const bodyPreview = bodyText.length > 300 ? bodyText.substring(0, 300) + '...' : bodyText; return { uid: item.json.uid, subject: env.subject || '', from: fromInfo, date: env.date || '', size: item.json.size, flags: flagList, bodyPreview: bodyPreview }; }); let summary = 'Emails: ' + emails.length; emails.forEach((e, i) => { summary += ' | ' + (i + 1) + ': ' + e.subject + ' - ' + e.from + ' - ' + e.date; }); return { count: emails.length, summary, emails }; })() }}",
-        "options": {}
+        "jsonOutput": "={{ (() => { const items = $input.all(); const emails = items.map(item => { const env = item.json.envelope || {}; const fromInfo = env.from && env.from[0] ? (env.from[0].name || env.from[0].address) : ''; const labels = item.json.labels || {}; const flagList = Object.keys(labels).filter(k => labels[k]).join(', ') || 'none'; const bodyText = item.json.textContent || ''; const bodyPreview = bodyText.length > 300 ? bodyText.substring(0, 300) + '...' : bodyText; return { uid: item.json.uid, subject: env.subject || '', from: fromInfo, date: env.date || '', size: item.json.size, flags: flagList, bodyPreview: bodyPreview }; }); let summary = 'Emails: ' + emails.length; emails.forEach((e, i) => { summary += ' | ' + (i + 1) + ': ' + e.subject + ' - ' + e.from + ' - ' + e.date; }); return { count: emails.length, summary, emails }; })() }}"
       },
       "id": "3ed51d73-4d79-49a7-aa57-267febd5d4b4",
       "name": "Format Read Output",
