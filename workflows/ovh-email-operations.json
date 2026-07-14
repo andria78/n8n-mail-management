@@ -60,9 +60,10 @@
       "parameters": {
         "authentication": "coreImapAccount",
         "resource": "email",
+        "operation": "getEmailsList",
         "mailboxes": ["={{ $json.mailbox || 'INBOX' }}"],
         "emailDateRange": {
-          "since": "={{ $json.since }}",
+          "since": "={{ $json.since || $today.minus({ days: 30 }).toFormat('yyyy-MM-dd') }}",
           "before": "={{ $json.before }}"
         },
         "emailFlags": {
@@ -70,6 +71,7 @@
           "deleted": "={{ ($json.deleted === '' || $json.deleted === undefined || $json.deleted === null) ? undefined : ($json.deleted === true || $json.deleted === 'true') }}",
           "draft": "={{ ($json.draft === '' || $json.draft === undefined || $json.draft === null) ? undefined : ($json.draft === true || $json.draft === 'true') }}",
           "flagged": "={{ ($json.flagged === '' || $json.flagged === undefined || $json.flagged === null) ? undefined : ($json.flagged === true || $json.flagged === 'true') }}",
+          "recent": false,
           "seen": "={{ ($json.seen === '' || $json.seen === undefined || $json.seen === null) ? undefined : ($json.seen === true || $json.seen === 'true') }}"
         },
         "customLabels": {},
