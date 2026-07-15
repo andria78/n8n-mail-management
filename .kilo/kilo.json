@@ -1,0 +1,12 @@
+{
+  "$schema": "https://app.kilo.ai/config.json",
+  "mcp": {
+    "n8n-mcp": {
+      "type": "remote",
+      "url": "https://n8n.andrianarison.com/mcp-server/http",
+      "headers": {
+        "Authorization": "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI0MDM4NWUxYS1hNTlhLTQwOTgtYWM4NC1iOTZkYjQ1Zjk1MDUiLCJpc3MiOiJuOG4iLCJhdWQiOiJtY3Atc2VydmVyLWFwaSIsImp0aSI6ImNhNDJhNmU2LTFhZmItNGMxNS1hNTlmLTRhNzYzZTU3YmMwMiIsImlhdCI6MTc4NDE1MTI1OH0.Rum6ly7w2Tkj_deDL5khrkAzH39SbVgucp16BSERNMo"
+      }
+    }
+  }
+}
