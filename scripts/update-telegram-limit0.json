@@ -1,0 +1,11 @@
+{
+  "workflowId": "E6zR3WkUfXjCdeE6",
+  "operations": [
+    {
+      "type": "setNodeParameter",
+      "nodeName": "Read OVH Emails",
+      "path": "/workflowInputs/value",
+      "value": { "limit": 0 }
+    }
+  ]
+}

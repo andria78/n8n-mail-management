@@ -120,3 +120,4 @@ These principles recur throughout the implementation and are detailed in [`docs/
 - **Chatbot workflow ID:** `E6zR3WkUfXjCdeE6`
 - **Email sub-workflow ID:** `me7ect2HVlIIo4us`
 - **Timezone:** `Europe/Paris` (used consistently everywhere)
+- **Access & sync guide:** [`docs/access-and-sync.md`](docs/access-and-sync.md) — MCP vs REST credentials, and how to push workflow JSON safely

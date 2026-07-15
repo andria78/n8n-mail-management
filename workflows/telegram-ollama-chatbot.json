@@ -99,7 +99,9 @@
         },
         "workflowInputs": {
           "mappingMode": "defineBelow",
-          "value": {},
+          "value": {
+            "limit": 0
+          },
           "matchingColumns": [],
           "schema": [
             {
