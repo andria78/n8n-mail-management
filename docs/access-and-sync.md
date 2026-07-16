@@ -114,8 +114,59 @@ so it works where the REST `PUT` fails. Prefer this for adding/removing nodes.
 `settings: {executionOrder:"v1"}`) works for **new** workflows. Do not use it to
 update an existing active workflow.
 
-## 5. Current sync status
+## 5. Two-way sync that preserves credentials (Source Control)
+
+The MCP/REST export **strips credential references** (§3), so committing an
+exported workflow JSON loses the credential link and the node shows "Missing
+required credential" after re-import. The only reliable two-way sync that keeps
+credentials linked is n8n's built-in **Source Control** (git), because it commits
+workflows with credentials referenced by **name** (not the instance-specific
+numeric ID) and re-links them by name on pull.
+
+### 5.1 One-time setup (in the n8n UI)
+
+1. **Settings → Source Control → Connect**.
+2. Choose **Git** and point it at this repo:
+   `https://github.com/andria78/n8n-mail-management`
+   (branch `main`, workflows directory `workflows/`).
+3. Enable **Include credentials in commit**. n8n then writes the
+   `credentials` block into each node using the credential **name** as the
+   reference, which survives re-import on any instance that has a credential
+   with that name.
+4. Click **Push** to commit the current live workflows (with credential names)
+   to the repo. This is the authoritative backup + analysis source.
+
+### 5.2 Daily two-way workflow
+
+- **Edit in n8n UI → push to git:** make changes in n8n, then Source Control →
+  **Push**. The repo JSON updates with the same credential-name links. Safe for
+  analysis, diffing, and backup.
+- **Edit JSON in repo → pull into n8n:** edit `workflows/*.json`, commit, then
+  Source Control → **Pull** in n8n. Credentials re-link by name automatically
+  (as long as a credential with that name exists on the instance).
+
+### 5.3 Why this fixes the lost-link problem
+
+- Exported JSON references credentials by numeric `id` (instance-specific) and
+  n8n even strips it on `GET` — so re-import drops the link.
+- Source Control uses the credential **name**, which is stable across instances.
+  As long as the destination instance has a credential with the same name, the
+  link is restored on pull.
+
+## 6. REST API backup script (analysis only — no credential linking)
+
+`scripts/pull-workflows.sh` downloads live workflows via `GET /api/v1/workflows/:id`
+using the REST API key (§2.2). Use it for **backup/analysis/diff**, NOT for
+restoring credential links (exports strip them — §3). Keep the key in `.env`
+(already git-ignored) or pass via env var `N8N_API_KEY`.
+
+```bash
+N8N_API_KEY=<key> ./scripts/pull-workflows.sh
+```
+
+## 7. Current sync status
 
 As of the last check, the two local files already match the live instance
 (`limit: 0` present on `Read OVH Emails`; same nodes/connections). No push was
-required.
+required. Once Source Control is connected (§5.1) the repo becomes the
+authoritative, credential-name-linked backup.
