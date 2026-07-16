@@ -3,28 +3,89 @@
   "nodes": [
     {
       "parameters": {
+        "authentication": "coreImapAccount",
+        "resource": "email",
+        "mailboxes": [
+          "={{ $json.mailbox || 'INBOX' }}"
+        ],
+        "emailDateRange": {
+          "since": "={{ $json.since || $today.minus({ days: 30 }).toFormat('yyyy-MM-dd') }}",
+          "before": "={{ $json.before }}"
+        },
+        "emailFlags": {
+          "answered": "={{ ($json.answered === '' || $json.answered === undefined || $json.answered === null) ? undefined : ($json.answered === true || $json.answered === 'true') }}",
+          "deleted": "={{ ($json.deleted === '' || $json.deleted === undefined || $json.deleted === null) ? undefined : ($json.deleted === true || $json.deleted === 'true') }}",
+          "draft": "={{ ($json.draft === '' || $json.draft === undefined || $json.draft === null) ? undefined : ($json.draft === true || $json.draft === 'true') }}",
+          "flagged": "={{ ($json.flagged === '' || $json.flagged === undefined || $json.flagged === null) ? undefined : ($json.flagged === true || $json.flagged === 'true') }}",
+          "recent": false,
+          "seen": "={{ ($json.seen === '' || $json.seen === undefined || $json.seen === null) ? undefined : ($json.seen === true || $json.seen === 'true') }}"
+        },
+        "customLabels": {},
+        "emailSearchFilters": {
+          "bcc": "={{ $json.bcc }}",
+          "cc": "={{ $json.cc }}",
+          "from": "={{ $json.from }}",
+          "subject": "={{ $json.subject }}",
+          "text": "={{ $json.searchText }}",
+          "to": "={{ $json.to }}"
+        },
+        "includeParts": [
+          "textContent",
+          "flags",
+          "size"
+        ],
+        "limit": "={{ $json.limit || 50 }}",
+        "operation": "getEmailsList"
+      },
+      "id": "68c803c6-c82c-4d27-bda9-38f09ced2b16",
+      "name": "Read Emails",
+      "type": "n8n-nodes-imap-enhanced.imapEnhanced",
+      "typeVersion": 1,
+      "position": [
+        880,
+        480
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
         "inputSource": "passthrough"
       },
       "id": "trigger-exec-workflow",
       "name": "Start",
       "type": "n8n-nodes-base.executeWorkflowTrigger",
       "typeVersion": 1.2,
-      "position": [-32, 448]
+      "position": [
+        -32,
+        448
+      ]
     },
     {
       "parameters": {
-        "mode": "raw",
-        "jsonOutput": "={{ (() => { const d = Object.assign({}, $json); if (d.input) { try { Object.assign(d, JSON.parse(d.input)); } catch(e) { if (typeof d.input === 'string' && d.input.includes('=')) { const parts = d.input.split('='); const key = parts[0].trim(); let val = parts.slice(1).join('=').trim(); if (val === 'true') val = true; else if (val === 'false') val = false; else if (!isNaN(val)) val = Number(val); d[key] = val; } } delete d.input; } return d; })() }}",
-        "includeOtherFields": true,
-        "options": {
-          "stripBinary": true
+        "authentication": "coreImapAccount",
+        "resource": "email",
+        "operation": "setEmailFlags",
+        "mailboxPath": {
+          "__rl": true,
+          "mode": "list",
+          "value": "={{ $json.mailbox || 'INBOX' }}"
+        },
+        "emailUid": "={{ $json.emailUid || '' }}",
+        "flags": {
+          "\\Answered": "={{ $json.markAnswered === true || $json.markAnswered === 'true' }}",
+          "\\Deleted": "={{ $json.markDeleted === true || $json.markDeleted === 'true' }}",
+          "\\Flagged": "={{ $json.markFlagged === true || $json.markFlagged === 'true' }}",
+          "\\Seen": "={{ $json.markAsRead === true || $json.markAsRead === 'true' }}"
         }
       },
-      "id": "e644744c-7551-45ed-9cc0-38ecb3376231",
-      "name": "Parse Input",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [208, 448]
+      "id": "b1c5d2e3-f4a6-7890-abcd-ef1234567890",
+      "name": "Set Email Flags",
+      "type": "n8n-nodes-imap-enhanced.imapEnhanced",
+      "typeVersion": 1,
+      "position": [
+        880,
+        880
+      ]
     },
     {
       "parameters": {
@@ -54,176 +115,238 @@
       "name": "Route Action",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [640, 640]
+      "position": [
+        640,
+        640
+      ]
     },
     {
       "parameters": {
-        "authentication": "coreImapAccount",
-        "resource": "email",
-        "operation": "getEmailsList",
-        "mailboxes": ["={{ $json.mailbox || 'INBOX' }}"],
-        "emailDateRange": {
-          "since": "={{ $json.since || $today.minus({ days: 30 }).toFormat('yyyy-MM-dd') }}",
-          "before": "={{ $json.before }}"
-        },
-        "emailFlags": {
-          "answered": "={{ ($json.answered === '' || $json.answered === undefined || $json.answered === null) ? undefined : ($json.answered === true || $json.answered === 'true') }}",
-          "deleted": "={{ ($json.deleted === '' || $json.deleted === undefined || $json.deleted === null) ? undefined : ($json.deleted === true || $json.deleted === 'true') }}",
-          "draft": "={{ ($json.draft === '' || $json.draft === undefined || $json.draft === null) ? undefined : ($json.draft === true || $json.draft === 'true') }}",
-          "flagged": "={{ ($json.flagged === '' || $json.flagged === undefined || $json.flagged === null) ? undefined : ($json.flagged === true || $json.flagged === 'true') }}",
-          "recent": false,
-          "seen": "={{ ($json.seen === '' || $json.seen === undefined || $json.seen === null) ? undefined : ($json.seen === true || $json.seen === 'true') }}"
-        },
-        "customLabels": {},
-        "emailSearchFilters": {
-          "bcc": "={{ $json.bcc }}",
-          "cc": "={{ $json.cc }}",
-          "from": "={{ $json.from }}",
-          "subject": "={{ $json.subject }}",
-          "text": "={{ $json.searchText }}",
-          "to": "={{ $json.to }}"
-        },
-        "includeParts": ["textContent", "flags", "size"],
-        "limit": "={{ $json.limit || 50 }}"
+        "mode": "raw",
+        "jsonOutput": "={{ (() => { const d = Object.assign({}, $json); if (d.input) { try { Object.assign(d, JSON.parse(d.input)); } catch(e) { if (typeof d.input === 'string' && d.input.includes('=')) { const parts = d.input.split('='); const key = parts[0].trim(); let val = parts.slice(1).join('=').trim(); if (val === 'true') val = true; else if (val === 'false') val = false; else if (!isNaN(val)) val = Number(val); d[key] = val; } } delete d.input; } return d; })() }}",
+        "includeOtherFields": true,
+        "options": {
+          "stripBinary": true
+        }
       },
-      "id": "68c803c6-c82c-4d27-bda9-38f09ced2b16",
-      "name": "Read Emails",
-      "type": "n8n-nodes-imap-enhanced.imapEnhanced",
-      "typeVersion": 1,
-      "position": [880, 480],
-      "alwaysOutputData": true
+      "id": "e644744c-7551-45ed-9cc0-38ecb3376231",
+      "name": "Parse Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        208,
+        448
+      ]
     },
     {
       "parameters": {
-        "mode": "runOnceForAllItems",
-        "language": "javaScript",
         "jsCode": "const items = $input.all();\nconst emails = items.map(item => {\n  const json = item.json;\n  const env = json.envelope || {};\n  const fromInfo = env.from && env.from[0] ? (env.from[0].name || env.from[0].address) : '';\n  const flagsObj = json.flags || json.labels || {};\n  const flagList = Object.keys(flagsObj).filter(k => flagsObj[k]).join(', ') || 'none';\n  const bodyText = json.textContent || '';\n  const bodyPreview = bodyText.length > 300 ? bodyText.substring(0, 300) + '...' : bodyText;\n  return {\n    uid: json.uid,\n    subject: env.subject || '',\n    from: fromInfo,\n    date: env.date || '',\n    size: json.size,\n    flags: flagList,\n    bodyPreview: bodyPreview\n  };\n});\n\nlet summary = 'Emails: ' + emails.length;\nemails.forEach((e, i) => {\n  summary += ' | ' + (i + 1) + ': ' + e.subject + ' - ' + e.from + ' - ' + e.date;\n});\n\nreturn [{ json: { count: emails.length, summary, emails } }];"
       },
       "id": "e6264160-9752-459c-9422-f7fe349dc099",
       "name": "Format Results",
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
-      "position": [1120, 480]
+      "position": [
+        1120,
+        480
+      ]
     },
     {
       "parameters": {
-        "authentication": "coreImapAccount",
-        "resource": "email",
-        "operation": "setEmailFlags",
-        "mailboxPath": {
-          "__rl": true,
-          "mode": "list",
-          "value": "={{ $json.mailbox || 'INBOX' }}"
-        },
-        "emailUid": "={{ $json.emailUid || '' }}",
-        "flags": {
-          "\\Answered": "={{ $json.markAnswered === true || $json.markAnswered === 'true' }}",
-          "\\Deleted": "={{ $json.markDeleted === true || $json.markDeleted === 'true' }}",
-          "\\Flagged": "={{ $json.markFlagged === true || $json.markFlagged === 'true' }}",
-          "\\Seen": "={{ $json.markAsRead === true || $json.markAsRead === 'true' }}"
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.action }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "read"
+            },
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.action }}",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              },
+              "rightValue": "mark"
+            }
+          ],
+          "combinator": "or"
         }
       },
-      "id": "b1c5d2e3-f4a6-7890-abcd-ef1234567890",
-      "name": "Set Email Flags",
-      "type": "n8n-nodes-imap-enhanced.imapEnhanced",
-      "typeVersion": 1,
-      "position": [880, 880]
-    },
-    {
       "id": "ba4e4581-6346-4366-a9c9-165a58264ae5",
       "name": "Validate Action",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [400, 640],
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
-          "conditions": [
-            { "id": "c1", "leftValue": "={{ $json.action }}", "operator": { "type": "string", "operation": "equals" }, "rightValue": "read" },
-            { "id": "c2", "leftValue": "={{ $json.action }}", "operator": { "type": "string", "operation": "equals" }, "rightValue": "mark" }
-          ],
-          "combinator": "or"
-        }
-      }
+      "position": [
+        400,
+        640
+      ]
     },
     {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 2
+          },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.emailUid }}",
+              "operator": {
+                "type": "string",
+                "operation": "isNotEmpty"
+              },
+              "rightValue": ""
+            }
+          ],
+          "combinator": "and"
+        }
+      },
       "id": "131d78d8-a460-408e-9c48-ca354760161d",
       "name": "Validate Mark",
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
-      "position": [640, 880],
-      "parameters": {
-        "conditions": {
-          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict", "version": 2 },
-          "conditions": [
-            { "id": "c1", "leftValue": "={{ $json.emailUid }}", "operator": { "type": "string", "operation": "isNotEmpty" }, "rightValue": "" }
-          ],
-          "combinator": "and"
-        }
-      }
+      "position": [
+        640,
+        880
+      ]
     },
     {
-      "id": "93de74d0-664f-45db-90e0-56df2bf1f727",
-      "name": "Invalid Action Error",
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [400, 880],
       "parameters": {
         "mode": "raw",
         "jsonOutput": "={{ { count: 0, summary: \"Error: action must be 'read' or 'mark'\", emails: [] } }}",
         "options": {}
-      }
-    },
-    {
-      "id": "9f3ca8db-4143-41c9-becd-b82e4047bce2",
-      "name": "Missing EmailUid Error",
+      },
+      "id": "93de74d0-664f-45db-90e0-56df2bf1f727",
+      "name": "Invalid Action Error",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
-      "position": [880, 1120],
+      "position": [
+        400,
+        880
+      ]
+    },
+    {
       "parameters": {
         "mode": "raw",
         "jsonOutput": "={{ { count: 0, summary: \"Error: emailUid is required for mark action\", emails: [] } }}",
         "options": {}
-      }
+      },
+      "id": "9f3ca8db-4143-41c9-becd-b82e4047bce2",
+      "name": "Missing EmailUid Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        880,
+        1120
+      ]
     }
   ],
   "connections": {
+    "Route Action": {
+      "main": [
+        [
+          {
+            "node": "Validate Mark",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Read Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
     "Start": {
-      "main": [[{ "node": "Parse Input", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Parse Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Read Emails": {
+      "main": [
+        [
+          {
+            "node": "Format Results",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Parse Input": {
-      "main": [[{ "node": "Validate Action", "type": "main", "index": 0 }]]
+      "main": [
+        [
+          {
+            "node": "Validate Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     },
     "Validate Action": {
       "main": [
-        [{ "node": "Route Action", "type": "main", "index": 0 }],
-        [{ "node": "Invalid Action Error", "type": "main", "index": 0 }]
-      ]
-    },
-    "Route Action": {
-      "main": [
-        [{ "node": "Validate Mark", "type": "main", "index": 0 }],
-        [{ "node": "Read Emails", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Route Action",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Invalid Action Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
     },
     "Validate Mark": {
       "main": [
-        [{ "node": "Set Email Flags", "type": "main", "index": 0 }],
-        [{ "node": "Missing EmailUid Error", "type": "main", "index": 0 }]
+        [
+          {
+            "node": "Set Email Flags",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Missing EmailUid Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
       ]
-    },
-    "Read Emails": {
-      "main": [[{ "node": "Format Results", "type": "main", "index": 0 }]]
     }
   },
-  "nodeGroups": [],
-  "tags": [],
-  "active": true,
   "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": true,
-    "timeSavedMode": "fixed",
-    "callerPolicy": "workflowsFromSameOwner"
-  }
+    "executionOrder": "v1"
+  },
+  "active": true,
+  "tags": []
 }

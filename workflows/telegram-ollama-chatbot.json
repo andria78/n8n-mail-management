@@ -13,7 +13,7 @@
       "type": "n8n-nodes-base.telegramTrigger",
       "typeVersion": 1.3,
       "position": [
-        2000,
+        1472,
         -208
       ],
       "webhookId": "wh-telegram-001"
@@ -69,8 +69,6 @@
     },
     {
       "parameters": {
-        "resource": "message",
-        "operation": "sendMessage",
         "chatId": "={{ $('Telegram Message Received').item.json.message.chat.id }}",
         "text": "={{ $json.output }}",
         "additionalFields": {
@@ -225,7 +223,6 @@
     },
     {
       "parameters": {
-        "language": "javaScript",
         "jsCode": "const output = $json.output || '';\nconst MAX = 3900;\nconst entries = output.split(/\\n\\n+/);\nconst chunks = [];\nlet current = '';\nfor (const entry of entries) {\n  const candidate = current ? current + '\\n\\n' + entry : entry;\n  if (candidate.length > MAX && current.length > 0) {\n    chunks.push(current);\n    current = entry;\n  } else {\n    current = candidate;\n  }\n}\nif (current) chunks.push(current);\nreturn chunks.map((c, idx) => ({ json: { output: c, chunkIndex: idx, chunkTotal: chunks.length } }));"
       },
       "id": "fba75fec-71bc-4cd4-a159-9a7b53595d1d",
@@ -238,14 +235,6 @@
       ]
     },
     {
-      "id": "c5a51202-e11d-45be-8c2d-bf973dce8c4e",
-      "name": "Check Message Text",
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 1,
-      "position": [
-        2048,
-        -208
-      ],
       "parameters": {
         "conditions": {
           "string": [
@@ -254,24 +243,31 @@
               "operation": "isNotEmpty"
             }
           ]
-        },
-        "combineOperation": "all"
-      }
+        }
+      },
+      "id": "c5a51202-e11d-45be-8c2d-bf973dce8c4e",
+      "name": "Check Message Text",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        -208
+      ]
     },
     {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ { output: \"Désolé, je ne peux traiter que les messages texte pour le moment.\" } }}",
+        "options": {}
+      },
       "id": "066b89d8-2d9a-4fdb-a17c-26d1b299f366",
       "name": "Fallback Message",
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2288,
-        -384
-      ],
-      "parameters": {
-        "mode": "raw",
-        "jsonOutput": "={{ { output: \"D\u00e9sol\u00e9, je ne peux traiter que les messages texte pour le moment.\" } }}",
-        "options": {}
-      }
+        2304,
+        -480
+      ]
     },
     {
       "parameters": {
@@ -311,14 +307,14 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2.2,
       "position": [
-        2176,
+        1872,
         -208
       ]
     },
     {
       "parameters": {
         "mode": "raw",
-        "jsonOutput": "={{ { output: \"\ud83d\udd04 Session r\u00e9initialis\u00e9e ! Je suis pr\u00eat pour une nouvelle conversation. Pose-moi ta question !\" } }}",
+        "jsonOutput": "={{ { output: \"🔄 Session réinitialisée ! Je suis prêt pour une nouvelle conversation. Pose-moi ta question !\" } }}",
         "options": {}
       },
       "id": "066b89d9-2d9a-4fdb-a17c-26d1b299f367",
@@ -326,13 +322,12 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        2368,
-        -384
+        2304,
+        -352
       ]
     },
     {
       "parameters": {
-        "language": "javaScript",
         "jsCode": "const chatId = $json.message.chat.id;\nreturn [{ json: { ...$json, chatId } }];"
       },
       "id": "extract-chat-id-001",
@@ -340,8 +335,8 @@
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
       "position": [
-        2080,
-        48
+        2096,
+        -208
       ]
     }
   ],
@@ -482,12 +477,9 @@
       ]
     }
   },
-  "nodeGroups": [],
-  "tags": [],
-  "active": true,
   "settings": {
-    "executionOrder": "v1",
-    "binaryMode": "separate",
-    "availableInMCP": true
-  }
+    "executionOrder": "v1"
+  },
+  "active": true,
+  "tags": []
 }
